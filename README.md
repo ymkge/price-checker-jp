@@ -4,7 +4,7 @@ ECサイトの価格比較・レビュー分析を行うためのバックエン
 
 ## 概要
 
-このプロジェクトは、複数のECサイトから商品情報を収集し、価格やレビューを比較・分析するためのバックエンド機能を提供します。現在は楽天商品検索APIに対応しています。
+このプロジェクトは、複数のECサイトから商品情報を収集し、価格やレビューを比較・分析するためのバックエンド機能を提供します。現在は楽天商品検索APIに対応し、取得したデータに対する簡易的な感情分析機能も実装されています。
 
 ## 技術スタック
 
@@ -14,39 +14,38 @@ ECサイトの価格比較・レビュー分析を行うためのバックエン
   - `httpx`: 非同期HTTPクライアント
   - `pydantic`: データバリデーション
   - `python-dotenv`: 環境変数管理
-  - `janome`: (導入予定) 日本語形態素解析
+  - `janome`: 日本語形態素解析
   - `uvicorn`: ASGIサーバー
 
 ## プロジェクト構造
 
-クリーンアーキテクチャの考え方に基づき、関心事を分離しています。
-
 ```
 .
 ├── app
-│   ├── adapters      # 外部API（ECサイト）との通信
+│   ├── adapters
 │   │   ├── base.py
 │   │   └── rakuten.py
-│   ├── analyzer      # レビュー分析ロジック (未実装)
-│   ├── api           # APIエンドポイント (未実装)
-│   ├── models        # データ構造の定義
+│   ├── analyzer
+│   │   └── review_analyzer.py
+│   ├── api
+│   │   └── search.py
+│   ├── models
 │   │   └── product.py
-│   └── services      # ビジネスロジック (未実装)
-├── .env              # 環境変数ファイル
-├── main.py           # FastAPIアプリケーションのエントリーポイント
-├── README.md         # このファイル
-└── requirements.txt  # Pythonライブラリの依存関係
+│   └── services
+│       └── search_service.py
+├── .env
+├── main.py
+├── README.md
+└── requirements.txt
 ```
 
 ## セットアップと実行方法
 
 ### 1. 依存関係のインストール
 
-```bash
-# 仮想環境の作成を推奨
-# python -m venv venv
-# source venv/bin/activate
+プロジェクトのルートディレクトリで以下のコマンドを実行し、必要なライブラリをインストールします。
 
+```bash
 pip install -r requirements.txt
 ```
 
@@ -66,17 +65,41 @@ RAKUTEN_APP_ID="YOUR_RAKUTEN_APP_ID_HERE"
 uvicorn main:app --reload
 ```
 
-サーバーが起動すると、`http://127.0.0.1:8000` でアクセスできます。
-現在はトップページ (`/`) のみアクセス可能です。
+## APIの使い方
 
-## 現在実装済みの機能
+サーバー起動後、以下のエンドポイントが利用可能です。
+
+### 商品検索 (`/search`)
+
+WebブラウザやAPIクライアントから、以下のURLにGETリクエストを送信します。
+
+`http://127.0.0.1:8000/search?keyword=YOUR_KEYWORD`
+
+**例:**
+```
+http://127.0.0.1:8000/search?keyword=Python
+```
+
+成功すると、検索・分析された商品情報のリストがJSON形式で返されます。
+
+### APIドキュメント (`/docs`)
+
+`http://127.0.0.1:8000/docs`
+
+このページでは、APIの仕様を対話的に確認したり、直接リクエストを送信してテストすることができます。
+
+## 実装済みの機能
 
 - FastAPIによるWebサーバーの基本設定
-- 楽天商品検索APIを利用した商品データ（商品名、価格、URL、評価平均）の取得機能 (`RakutenAdapter`)
-- `Product` や `Review` などの共通データモデルの定義
+- `Product` や `Review` などの共通データモデル
+- **楽天商品検索APIとの連携** (`RakutenAdapter`)
+- **日本語レビューの感情分析機能** (`ReviewAnalyzer`)
+- **検索と分析を統括するサービスロジック** (`SearchService`)
+- **`/search` APIエンドポイントの実装**
 
 ## 次のステップ
 
-- レビュー分析機能の実装 (`app/analyzer`)
-- 検索機能を外部に公開するためのAPIエンドポイントの実装 (`app/api`)
-- 複数ECサイトの検索結果を統合するビジネスロジックの実装 (`app/services`)
+- Amazonなど、他のECサイト用アダプターの追加
+- 感情分析ロジックの高度化（感情辞書の拡充など）
+- 検索結果を永続化するためのデータベース導入
+- フロントエンドアプリケーションとの連携
